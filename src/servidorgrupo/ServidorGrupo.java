@@ -15,15 +15,20 @@ import java.util.Map;
 
 public class ServidorGrupo {
 
-    // 🔑 CREDENCIALES DE CLEVER CLOUD (Remplaza estos textos con tus datos reales de la web)
+    // 🔑 CREDENCIALES DE CLEVER CLOUD
     private static final String DB_HOST = "bifz9f7gbre71iqzrmft-mysql.services.clever-cloud.com";
     private static final String DB_NAME = "bifz9f7gbre71iqzrmft";
     private static final String DB_USER = "ue98nui8sigael4a";
     private static final String DB_PASS = "1ZIUb34Rz9bfhwnBdLIS";
-    private static final String DB_PORT = "3306"; // Por defecto en Clever Cloud es 3306
+    private static final String DB_PORT = "3306"; 
 
     public static void main(String[] args) throws IOException {
-        HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+        // 🌐 TRUCO MÁGICO: Leemos el puerto dinámico que nos da internet. Si no existe (estás en tu PC), usa el 8080.
+        String portVar = System.getenv("PORT");
+        int puerto = (portVar != null) ? Integer.parseInt(portVar) : 8080;
+
+        // Creamos el servidor usando el puerto correcto asignado por la nube
+        HttpServer server = HttpServer.create(new InetSocketAddress(puerto), 0);
         
         // 1. Ruta para el proceso de Login
         server.createContext("/login", new LoginHandler());
@@ -73,7 +78,7 @@ public class ServidorGrupo {
             }
         });
 
-        // ⭐ Ruta dinámica para que el navegador pueda leer cualquier foto de la carpeta 'imagenes'
+        // ⭐ Ruta dinámica para imágenes
         server.createContext("/imagenes/", new HttpHandler() {
             @Override
             public void handle(HttpExchange exchange) throws IOException {
@@ -127,7 +132,7 @@ public class ServidorGrupo {
             }
         });
 
-        // 3. Ruta de inicio (Login HTML) - DEBE IR AL FINAL
+        // 3. Ruta de inicio (Login HTML)
         server.createContext("/", new HttpHandler() {
             @Override
             public void handle(HttpExchange exchange) throws IOException {
@@ -137,7 +142,7 @@ public class ServidorGrupo {
         });
         
         server.setExecutor(null); 
-        System.out.println("🚀 Servidor corriendo en http://localhost:8080");
+        System.out.println("🚀 Servidor corriendo exitosamente en el puerto: " + puerto);
         server.start();
     }
 
@@ -190,7 +195,6 @@ public class ServidorGrupo {
                 String txtUsuario = params.get("usuario");
                 String txtContrasena = params.get("contrasena");
 
-                // Buscamos el usuario y obtenemos sus datos desde MySQL
                 String datosUsuario = obtenerDatosUsuario(txtUsuario, txtContrasena);
 
                 String respuesta = (datosUsuario != null) ? "OK," + datosUsuario : "ERROR";
@@ -203,16 +207,11 @@ public class ServidorGrupo {
         }
 
         private String obtenerDatosUsuario(String usuario, String contrasena) {
-            // URL de conexión remota para MySQL
             String url = "jdbc:mysql://" + DB_HOST + ":" + DB_PORT + "/" + DB_NAME + "?useSSL=false&serverTimezone=UTC";
-            
-            // Mantenemos tus mayúsculas exactas del Access en las columnas
             String sql = "SELECT NombreMostrado, Rol FROM Usuarios WHERE Usuario = ? AND Contrasena = ?";
             
             try {
-                // Forzamos la carga del Driver de MySQL que metiste en Libraries
                 Class.forName("com.mysql.cj.jdbc.Driver");
-                
                 try (Connection conn = DriverManager.getConnection(url, DB_USER, DB_PASS);
                      PreparedStatement pstmt = conn.prepareStatement(sql)) {
                     
@@ -221,7 +220,6 @@ public class ServidorGrupo {
                     
                     try (ResultSet rs = pstmt.executeQuery()) {
                         if (rs.next()) {
-                            // Retorna "Nombre,Rol" igual a como lo procesaba antes
                             return rs.getString("NombreMostrado") + "," + rs.getString("Rol");
                         }
                     }
