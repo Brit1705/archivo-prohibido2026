@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corte Suprema del Archivo Prohibido</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; margin: 0; padding: 15px; color: #333; }
+        .contenedor { max-width: 900px; margin: 0 auto; }
+        .card { background-color: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px; border-top: 5px solid #8e7037; }
+        .card h2, .card h3 { color: #5c461a; margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        
+        /* Formulario e Inputs */
+        .grid-formulario { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .campo { display: flex; flex-direction: column; }
+        .campo label { font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555; }
+        .input-txt { padding: 8px 12px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; }
+        
+        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s; }
+        .btn-oro { background-color: #8e7037; color: white; }
+        .btn-oro:hover { background-color: #735a2b; }
+        .btn-voto { padding: 12px; font-size: 16px; flex: 1; }
+        
+        /* Contenedores del Juicio Activo */
+        .bloque-juicio { border: 2px solid #8e7037; border-radius: 8px; padding: 20px; background-color: #fdfbf7; margin-top: 15px; }
+        .datos-caso-cabecera { background-color: #f5eedf; padding: 15px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; line-height: 1.6; border-left: 4px solid #8e7037; }
+        
+        /* Chat de la Corte */
+        .caja-chat-juicio { height: 250px; border: 1px solid #ddd; background: #fafafa; border-radius: 6px; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .burbuja-corte { padding: 8px 12px; border-radius: 6px; font-size: 14px; max-width: 80%; }
+        .corte-admin { background-color: #f2e6d0; border-left: 3px solid #8e7037; align-self: flex-start; }
+        .corte-invitado { background-color: #e3effa; border-left: 3px solid #1976d2; align-self: flex-start; }
+        .corte-mio { background-color: #e8f5e9; align-self: flex-end; }
+        
+        /* Panel Especial para los 3 Magistrados */
+        .panel-magistrados { background-color: #f5f5f5; border: 1px dashed #8e7037; padding: 15px; border-radius: 6px; margin-top: 15px; }
+        .votos-badge { display: inline-block; background: #e0e0e0; padding: 3px 8px; font-size: 12px; border-radius: 12px; margin-top: 5px; font-weight: bold; }
+        
+        /* Historial */
+        .item-historial { background: #f9f9f9; border-left: 4px solid #757575; padding: 15px; border-radius: 0 6px 6px 0; margin-bottom: 15px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div class="contenedor">
+        
+        <!-- ⚖️ SECCIÓN 1: APERTURA DE DEMANDAS (Todos ven, pero se controla al procesar) -->
+        <div id="card-apertura" class="card">
+            <h2>⚖️ Tribunal del Grupo Archivo Prohibido: Iniciar Proceso</h2>
+            <p style="font-size: 14px; color: #666;">Completa la documentación obligatoria para dar inicio a la sesión judicial.</p>
+            
+            <div class="grid-formulario">
+                <div class="campo" style="grid-column: 1/-1;">
+                    <label>⚖️ Constitución del Delito (¿De qué se le acusa?):</label>
+                    <input type="text" id="ins-delito" class="input-txt" placeholder="Ej. Incumplimiento de alguna regla.">
+                </div>
+                <div class="campo"><label>👤 Miembro Demandante:</label><input type="text" id="ins-demandante" class="input-txt"></div>
+                <div class="campo"><label>🛡️ Miembro Demandado (Acusado):</label><input type="text" id="ins-demandado" class="input-txt"></div>
+                <div class="campo"><label>👨‍⚖️ Juez Asignado del Caso:</label><input type="text" id="ins-juez" class="input-txt" value="Agustín" readonly></div>
+                <div class="campo"><label>👥 Testigos Clave Presentes:</label><input type="text" id="ins-testigos" class="input-txt" placeholder="Nombres separados por comas"></div>
+                <div class="campo"><label>💼 Abogado Defensor (Demandante):</label><input type="text" id="ins-abog-dem" class="input-txt"></div>
+                <div class="campo"><label>💼 Abogado Defensor (Acusado):</label><input type="text" id="ins-abog-acu" class="input-txt"></div>
+            </div>
+            <button onclick="comenzarJuicio()" class="btn btn-oro" style="width: 100%; font-size: 15px;">🔨 Comenzar con el Juicio</button>
+        </div>
+
+        <!-- ⚖️ SECCIÓN 2: SALA DE AUDIENCIA ACTIVA (Aparece cuando hay un caso vivo) -->
+        <div id="card-audiencia" class="card" style="display: none; border-top-color: #b08d49;">
+            <h2>🏛️ Sala de Audiencia en Curso</h2>
+            <div id="zona-caso-activo"></div>
+        </div>
+
+        <!-- ⚖️ SECCIÓN 3: HISTORIAL DE SENTENCIAS -->
+        <div class="card" style="border-top-color: #424242;">
+            <h3>📚 Archivo Histórico de Veredictos y Juicios</h3>
+            <div id="bloque-historial">
+                <p style="color:#777; font-style:italic; text-align:center;">No hay antecedentes penales registrados en el Archivo —</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let nombreUsuarioGlobal = "";
+        let esMagistrado = false; // Bri, Agustin, Hector
+
+        window.addEventListener('DOMContentLoaded', () => {
+            // El core lee el usuario real
+            nombreUsuarioGlobal = localStorage.getItem("nombreUsuario") || "Participante";
+            const userMinuscula = nombreUsuarioGlobal.toLowerCase().trim();
+            
+            // Los 3 magistrados autorizados por la ley del grupo
+            if (userMinuscula === "bri" || userMinuscula === "agustin" || userMinuscula === "agustin" || userMinuscula === "hector" || userMinuscula === "hector") {
+                esMagistrado = true;
+            }
+
+            actualizarVistaJuicio();
+            renderizarHistorial();
+            
+            // Refrescar el chat del juicio cada 2 segundos por si los magistrados hablan en vivo
+            setInterval(cargarMensajesJuicio, 2000);
+        });
+
+        function comenzarJuicio() {
+            const delito = document.getElementById("ins-delito").value.trim();
+            const dem = document.getElementById("ins-demandante").value.trim();
+            const dec = document.getElementById("ins-demandado").value.trim();
+            const juez = document.getElementById("ins-juez").value.trim();
+            const tes = document.getElementById("ins-testigos").value.trim() || "Ninguno";
+            const ab1 = document.getElementById("ins-abog-dem").value.trim() || "Sin defensa";
+            const ab2 = document.getElementById("ins-abog-acu").value.trim() || "Sin defensa";
+
+            if (delito === "" || dem === "" || dec === "") {
+                alert("La causa criminal debe incluir el delito, demandante y demandado.");
+                return;
+            }
+
+            const caso = {
+                id: Date.now(),
+                delito, demandante: dem, demandado: dec, juez, testigos: tes, abogDem: ab1, abogAcu: ab2,
+                fecha: new Date().toLocaleString(),
+                chat: [{ autor: "SISTEMA", texto: "--- La sesión en la corte ha iniciado formalmente. Silencio en la sala. ---" }],
+                votos: { culpable: 0, inocente: 0, quienesVotaron: [] },
+                permisosVoz: [] // Nombres de usuarios externos con pase temporal de chat
+            };
+
+            localStorage.setItem("juicioActivo", JSON.stringify(caso));
+            actualizarVistaJuicio();
+        }
+
+        function actualizarVistaJuicio() {
+            const caso = JSON.parse(localStorage.getItem("juicioActivo"));
+            const cardApertura = document.getElementById("card-apertura");
+            const cardAudiencia = document.getElementById("card-audiencia");
+
+            if (!caso) {
+                cardApertura.style.display = "block";
+                cardAudiencia.style.display = "none";
+                return;
+            }
+
+            cardApertura.style.display = "none";
+            cardAudiencia.style.display = "block";
+
+            // Verificar si este usuario tiene derecho a escribir (Magistrado o invitado con pase)
+            const tienePaseDeVoz = esMagistrado || caso.permisosVoz.includes(nombreUsuarioGlobal.toLowerCase().trim());
+
+            let html = `
+                <div class="datos-caso-cabecera">
+                    <b>⚖️ CAUSA DEL JUICIO:</b> ${caso.delito}<br>
+                    <b>👤 Demandante:</b> ${caso.demandante} | <b>🛡️ Acusado:</b> ${caso.demandado}<br>
+                    <b>👨‍⚖️ Juez del Caso:</b> ${caso.juez} | <b>👥 Testigos:</b> ${caso.testigos}<br>
+                    <b>💼 Abogados:</b> ${caso.abogDem} (Dem.) vs ${caso.abogAcu} (Acu.)<br>
+                    <b>📅 Fecha de Apertura:</b> ${caso.fecha}
+                </div>
+
+                <!-- CHAT EXCLUSIVO -->
+                <h3>💬 Transcripción de Declaraciones de la Corte</h3>
+                <div class="caja-chat-juicio" id="chat-sala-tribunal"></div>
+                
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <input type="text" id="txt-msg-corte" class="input-txt" style="flex-grow:1;" 
+                           placeholder="${tienePaseDeVoz ? 'Escribe tu testimonio o argumento...' : 'Solo Lectura: No tienes el uso de la palabra'}" 
+                           ${tienePaseDeVoz ? '' : 'disabled'}>
+                    <button onclick="enviarMsgCorte()" class="btn btn-oro" ${tienePaseDeVoz ? '' : 'disabled'}>Enviar</button>
+                </div>
+            `;
+
+            // 🔒 CONTROLES DE LA MAGISTRATURA (Bri, Agustin, Hector)
+            if (esMagistrado) {
+                html += `
+                    <div class="panel-magistrados">
+                        <h4>🛡️ Panel del Alto Mando Judicial</h4>
+                        
+                        <!-- Otorgar permisos temporales de voz -->
+                        <div style="margin-bottom:15px; background:white; padding:10px; border-radius:5px; border:1fr solid #ddd;">
+                            <label style="font-size:12px; font-weight:bold;">🗣️ Conceder Permiso de Voz Temporal (Escribe el nombre exacto):</label>
+                            <div style="display:flex; gap:10px; margin-top:5px;">
+                                <input type="text" id="txt-invitado-voz" class="input-txt" style="flex-grow:1;" placeholder="Ej. Tomás">
+                                <button onclick="otorgarVoz()" class="btn btn-oro" style="padding:5px 12px;">Dar Palabra</button>
+                            </div>
+                            <span style="font-size:11px; color:#666;">Pases activos: ${caso.permisosVoz.join(", ") || "Ninguno"}</span>
+                        </div>
+
+                        <!-- Sistema de Votación Interno -->
+                        <p><b>🗳️ Dictamen del Jurado (1 voto por magistrado):</b></p>
+                        <div style="display:flex; gap:10px;">
+                            <button onclick="votarDictamen('Culpable')" class="btn btn-voto" style="background-color:#d32f2f; color:white;">⚖️ CULPABLE</button>
+                            <button onclick="votarDictamen('Inocente')" class="btn btn-voto" style="background-color:#25d366; color:#054c43;">🛡️ INOCENTE</button>
+                        </div>
+                        <div class="votos-badge">Escrutinio Actual: ${caso.votos.culpable} Culpable | ${caso.votos.inocente} Inocente</div>
+
+                        <!-- El mazo del Juez (Sentencia) -->
+                        <h4 style="margin-top:20px; border-top:1px solid #ddd; padding-top:10px;">🔨 El Mazo del Juez: Redactar Sentencia Definitiva</h4>
+                        <textarea id="txt-sentencia" class="input-txt" style="width:100%; height:70px; resize:none; font-family:inherit; box-sizing:border-box; margin-bottom:10px;" placeholder="Escribe el veredicto final, castigo o razones del cierre..."></textarea>
+                        
+                        <div style="display:flex; gap:10px;">
+                            <button onclick="finalizarCaso('Sentenciado')" class="btn btn-oro" style="flex:1;">⚖️ Dictar Sentencia y Archivar</button>
+                            <button onclick="finalizarCaso('Anulado')" class="btn" style="background:#757575; color:white; flex:1;">❌ Cancelar / Anular Juicio</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            document.getElementById("zona-caso-activo").innerHTML = html;
+            cargarMensajesJuicio();
+        }
+
+        // Lógica de inyección y actualización de chat
+        function enviarMsgCorte() {
+            const input = document.getElementById("txt-msg-corte");
+            const texto = input.value.trim();
+            if (texto === "") return;
+
+            let caso = JSON.parse(localStorage.getItem("juicioActivo"));
+            caso.chat.push({ autor: nombreUsuarioGlobal, texto: texto });
+            localStorage.setItem("juicioActivo", JSON.stringify(caso));
+            input.value = "";
+            cargarMensajesJuicio();
+        }
+
+        function cargarMensajesJuicio() {
+            const caja = document.getElementById("chat-sala-tribunal");
+            if (!caja) return;
+
+            let caso = JSON.parse(localStorage.getItem("juicioActivo"));
+            if (!caso) return;
+
+            caja.innerHTML = "";
+            caso.chat.forEach(m => {
+                const div = document.createElement("div");
+                const autorMinus = m.autor.toLowerCase().trim();
+                
+                if (m.autor === "SISTEMA") {
+                    div.className = "burbuja-corte";
+                    div.style.color = "#735a2b";
+                    div.style.fontStyle = "italic";
+                    div.style.alignSelf = "center";
+                } else if (m.autor === nombreUsuarioGlobal) {
+                    div.className = "burbuja-corte corte-mio";
+                } else if (autorMinus === "bri" || autorMinus === "agustin" || autorMinus === "agustin" || autorMinus === "hector" || autorMinus === "hector") {
+                    div.className = "burbuja-corte corte-admin";
+                } else {
+                    div.className = "burbuja-corte corte-invitado";
+                }
+
+                div.innerHTML = `<b>${m.autor}:</b> ${m.texto}`;
+                caja.appendChild(div);
+            });
+            caja.scrollTop = caja.scrollHeight;
+        }
+
+        function otorgarVoz() {
+            const input = document.getElementById("txt-invitado-voz");
+            const nombre = input.value.trim().toLowerCase();
+            if (nombre === "") return;
+
+            let caso = JSON.parse(localStorage.getItem("juicioActivo"));
+            if (!caso.permisosVoz.includes(nombre)) {
+                caso.permisosVoz.push(nombre);
+                caso.chat.push({ autor: "SISTEMA", texto: `Se le ha otorgado el derecho de palabra a: ${input.value.trim()}.` });
+                localStorage.setItem("juicioActivo", JSON.stringify(caso));
+                input.value = "";
+                actualizarVistaJuicio();
+            }
+        }
+
+        function votarDictamen(voto) {
+            let caso = JSON.parse(localStorage.getItem("juicioActivo"));
+            if (caso.votos.quienesVotaron.includes(nombreUsuarioGlobal)) {
+                alert("Tu voto como jurado ya ha sido contabilizado.");
+                return;
+            }
+
+            if (voto === "Culpable") caso.votos.culpable += 1;
+            else caso.votos.inocente += 1;
+
+            caso.votos.quienesVotaron.push(nombreUsuarioGlobal);
+            localStorage.setItem("juicioActivo", JSON.stringify(caso));
+            actualizarVistaJuicio();
+        }
+
+        // 🔨 CIERRE Y PASO AL HISTORIAL
+        function finalizarCaso(resultado) {
+            let caso = JSON.parse(localStorage.getItem("juicioActivo"));
+            const cuadroSentencia = document.getElementById("txt-sentencia");
+            const sentencia = cuadroSentencia ? cuadroSentencia.value.trim() : "";
+
+            if (resultado === "Sentenciado" && sentencia === "") {
+                alert("Para archivar con sentencia, el Juez debe redactar la condena oficial.");
+                return;
+            }
+
+            caso.estadoFinal = resultado;
+            caso.sentenciaFinal = resultado === "Sentenciado" ? sentencia : "Caso anulado/cancelado por el alto mando.";
+            
+            // Guardamos en el baúl del historial histórico
+            let historial = JSON.parse(localStorage.getItem("historialTribunal")) || [];
+            historial.push(caso);
+            localStorage.setItem("historialTribunal", JSON.stringify(historial));
+
+            // Eliminamos el caso de la mesa de debates (vuelve a quedar libre)
+            localStorage.removeItem("juicioActivo");
+            actualizarVistaJuicio();
+            renderizarHistorial();
+            alert("El caso ha sido procesado y enviado al archivo histórico.");
+        }
+
+        function renderizarHistorial() {
+            const contenedor = document.getElementById("bloque-historial");
+            let historial = JSON.parse(localStorage.getItem("historialTribunal")) || [];
+
+            if (historial.length === 0) {
+                contenedor.innerHTML = `<p style="color:#777; font-style:italic; text-align:center;">No hay antecedentes penales registrados en el Archivo —</p>`;
+                return;
+            }
+
+            contenedor.innerHTML = "";
+            historial.reverse().forEach(h => {
+                const item = document.createElement("div");
+                item.className = "item-historial";
+                if (h.estadoFinal === "Anulado") item.style.borderLeftColor = "#d32f2f";
+                else item.style.borderLeftColor = "#8e7037";
+
+                item.innerHTML = `
+                    <b>📜 CASO EN ARCHIVO:</b> ${h.delito}<br>
+                    <span style="font-size:12px; color:#555;">👤 Demandante: ${h.demandante} | 🛡️ Acusado: ${h.demandado} | 👨‍⚖️ Juez: ${h.juez}</span><br>
+                    <span style="font-size:12px; color:#555;">💼 Abogados: ${h.abogDem} y ${h.abogAcu} | 📅 Fecha: ${h.fecha}</span><br>
+                    <div style="margin-top:8px; padding:10px; background:#fff; border:1px solid #eee; border-radius:4px;">
+                        <b>🗳️ Votación del Jurado:</b> Culpable (${h.votos.culpable}) vs Inocente (${h.votos.inocente})<br>
+                        <b>🔨 VEREDICTO DE LA CORTE:</b> <span style="color:#5c461a; font-weight:bold;">${h.sentenciaFinal}</span>
+                    </div>
+                `;
+                contenedor.appendChild(item);
+            });
+        }
+    </script>
+</body>
+</html>

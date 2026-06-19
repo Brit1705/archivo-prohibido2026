@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Miembros Oficiales</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 15px;
+            color: #333;
+        }
+
+        .contenedor { max-width: 900px; margin: 0 auto; }
+
+        .card {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            border-top: 5px solid #075e54;
+        }
+
+        .card h2 {
+            color: #075e54;
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        /* Diseño de la Rejilla de Miembros */
+        .rejilla-miembros {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        /* Tarjeta Básica del Nombre */
+        .tarjeta-miembro {
+            background-color: #f9f9f9;
+            border-left: 4px solid #25d366;
+            padding: 15px 20px;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: transform 0.2s, background-color 0.2s;
+            position: relative;
+        }
+
+        .tarjeta-miembro:hover {
+            transform: translateY(-3px);
+            background-color: #f1f8f5;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        .nombre-usuario {
+            font-size: 16px;
+            font-weight: bold;
+            color: #075e54;
+            margin: 0;
+        }
+
+        .rol-usuario {
+            font-size: 12px;
+            color: #666;
+            margin: 3px 0 0 0;
+        }
+
+        /* ❌ ESTILO ESPECIAL PARA EXMIEMBROS */
+        .tarjeta-miembro.ex-miembro {
+            border-left-color: #9e9e9e;
+            background-color: #eaeaea;
+            opacity: 0.7;
+        }
+        .tarjeta-miembro.ex-miembro .nombre-usuario {
+            text-decoration: line-through;
+            color: #616161;
+        }
+        .badge-fuera {
+            background-color: #757575;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+
+        /* Botón exclusivo de administración dentro de la tarjeta */
+        .btn-expulsar {
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            font-size: 10px;
+            padding: 3px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 8px;
+            align-self: flex-start;
+            font-weight: bold;
+            display: none; /* Controlado por JS */
+        }
+
+        /* 🖼️ INTERFAZ FLOTANTE (MODAL DE LA FICHA) */
+        .modal-ficha {
+            display: none; /* Oculto por defecto */
+            position: fixed;
+            z-index: 9999;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.85); /* Fondo oscuro */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-contenido-caja {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            text-align: center;
+        }
+
+        .modal-contenido-caja img {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border: 3px solid white;
+        }
+
+        .btn-cerrar-modal {
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-cerrar-modal:hover { background-color: #b71c1c; }
+    </style>
+</head>
+<body>
+
+    <div class="contenedor">
+        
+        <div class="card">
+            <h2>👥 Listado de Miembros</h2>
+            <p style="font-size:14px; color:#666; margin:0;">Para desplegar la Ficha de cada participante presiona donde esta su nombre.</p>
+            
+            <div class="rejilla-miembros" id="lista-contenedor-miembros">
+                
+                <!-- MIEMBRO 1: BRITANY -->
+                <div class="tarjeta-miembro" id="miembro-britany" onclick="abrirFicha('/imagenes/001.jpg')">
+                    <p class="nombre-usuario">Bri</p>
+                    <p class="rol-usuario">Gran Custodia de la Ley</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-britany')">⚠️ Marcar Fuera del Grupo</button>
+                </div>
+
+                <!-- MIEMBRO 2: AGUSTÍN -->
+                <div class="tarjeta-miembro" id="miembro-agustin" onclick="abrirFicha('/imagenes/011.jpg')">
+                    <p class="nombre-usuario">Agustín</p>
+                    <p class="rol-usuario">El Juez</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-agustin')">⚠️ Marcar Fuera del Grupo</button>
+                </div>
+
+                <!-- MIEMBRO 3: TOMÁS -->
+                <div class="tarjeta-miembro" id="miembro-tomas" onclick="abrirFicha('/imagenes/tomas.jpg')">
+                    <p class="nombre-usuario">Tomás</p>
+                    <p class="rol-usuario">El Bufón</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-tomas')">⚠️ Marcar Fuera del Grupo</button>
+                </div>
+                
+                 <div class="tarjeta-miembro" id="miembro-jade" onclick="abrirFicha('/imagenes/004.jpg')">
+                    <p class="nombre-usuario">Jade</p>
+                    <p class="rol-usuario">Miembro del grupo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+                
+                 <div class="tarjeta-miembro" id="miembro-cati" onclick="abrirFicha('/imagenes/005.jpg')">
+                    <p class="nombre-usuario">Cati</p>
+                    <p class="rol-usuario">Ex miembro del grupo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+                
+                 <div class="tarjeta-miembro" id="miembro-josue" onclick="abrirFicha('/imagenes/006.jpg')">
+                    <p class="nombre-usuario">Josue</p>
+                    <p class="rol-usuario">El defensor del pueblo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+                
+                 <div class="tarjeta-miembro" id="miembro-jkennedy" onclick="abrirFicha('/imagenes/003.jpg')">
+                    <p class="nombre-usuario">JKennedy</p>
+                    <p class="rol-usuario">Ex miembro del grupo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+                
+                <div class="tarjeta-miembro" id="miembro-neyib" onclick="abrirFicha('/imagenes/002.jpg')">
+                    <p class="nombre-usuario">Neyib</p>
+                    <p class="rol-usuario">Psicologa y consejera</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+                
+                <div class="tarjeta-miembro" id="miembro-wilmer" onclick="abrirFicha('/imagenes/007.jpg')">
+                    <p class="nombre-usuario">Wilmer</p>
+                    <p class="rol-usuario">Ex miembro del grupo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+                
+                <div class="tarjeta-miembro" id="miembro-kevin" onclick="abrirFicha('/imagenes/008.jpg')">
+                    <p class="nombre-usuario">Kevin</p>
+                    <p class="rol-usuario">Ex miembro del grupo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+                
+                <div class="tarjeta-miembro" id="miembro-gerardo" onclick="abrirFicha('/imagenes/009.jpg')">
+                    <p class="nombre-usuario">Gerardo</p>
+                    <p class="rol-usuario">Miembro del grupo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+                
+                <div class="tarjeta-miembro" id="miembro-daniel" onclick="abrirFicha('/imagenes/010.jpg')">
+                    <p class="nombre-usuario">Daniel</p>
+                    <p class="rol-usuario">Miembro del grupo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+                
+                <div class="tarjeta-miembro" id="miembro-abraham" onclick="abrirFicha('/imagenes/012.jpg')">
+                    <p class="nombre-usuario">Abraham</p>
+                    <p class="rol-usuario">Ex miembro del grupo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+                
+                <div class="tarjeta-miembro" id="miembro-gaby" onclick="abrirFicha('/imagenes/013.jpg')">
+                    <p class="nombre-usuario">Gabys</p>
+                    <p class="rol-usuario">Ex miembro del grupo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+                
+                <div class="tarjeta-miembro" id="miembro-hector" onclick="abrirFicha('/imagenes/014.jpg')">
+                    <p class="nombre-usuario">Hector</p>
+                    <p class="rol-usuario">Justiciero y Verdugo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+                
+                <div class="tarjeta-miembro" id="miembro-iker" onclick="abrirFicha('/imagenes/nose3.jpg')">
+                    <p class="nombre-usuario">Iker</p>
+                    <p class="rol-usuario">Miembro del grupo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+                
+                
+                <div class="tarjeta-miembro" id="miembro-Darolyn" onclick="abrirFicha('/imagenes/nose2.jpg')">
+                    <p class="nombre-usuario">Darolyn</p>
+                    <p class="rol-usuario">Miembro del grupo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+              
+                <div class="tarjeta-miembro" id="miembro-lester" onclick="abrirFicha('/imagenes/lester.jpg')">
+                    <p class="nombre-usuario">Lester</p>
+                    <p class="rol-usuario">Miembro del grupo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+                
+                <div class="tarjeta-miembro" id="miembro-juan" onclick="abrirFicha('/imagenes/nose1.jpg')">
+                    <p class="nombre-usuario">Juan David</p>
+                    <p class="rol-usuario">Miembro del grupo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+                
+                <div class="tarjeta-miembro" id="miembro-manuel" onclick="abrirFicha('/imagenes/022.jpg')">
+                    <p class="nombre-usuario">Manuel Antonio</p>
+                    <p class="rol-usuario">Miembro del grupo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+                
+                 <div class="tarjeta-miembro" id="miembro-matias" onclick="abrirFicha('/imagenes/021.jpg')">
+                    <p class="nombre-usuario">Matias</p>
+                    <p class="rol-usuario">Miembro del grupo</p>
+                    <button class="btn-expulsar" onclick="marcarComoFuera(event, 'miembro-nombre')">⚠️ Marcar Fuera del Grupo</button>
+                </div> 
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 🖼️ VENTANA FLOTANTE PARA VER LA FICHA -->
+    <div id="mi-modal-visor" class="modal-ficha" onclick="cerrarFicha()">
+        <div class="modal-contenido-caja" onclick="event.stopPropagation()">
+            <button class="btn-cerrar-modal" onclick="cerrarFicha()">✕</button>
+            <img id="imagen-ficha-grande" src="" alt="Ficha del Participante">
+        </div>
+    </div>
+
+    <script>
+        let rolUsuarioGlobal = "miembro";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            rolUsuarioGlobal = (localStorage.getItem("rolUsuario") || "miembro").toLowerCase().trim();
+
+            // 🛡️ CONTROL DE PRIVILEGIOS: Si es admin, le hacemos visibles los botones de "Marcar Fuera del Grupo"
+            if (rolUsuarioGlobal === "admin") {
+                const botones = document.querySelectorAll(".btn-expulsar");
+                botones.forEach(btn => btn.style.display = "block");
+            }
+
+            // Recuperar estados de expulsados almacenados para que no se borren al reiniciar
+            cargarEstadosExpulsados();
+        });
+
+        // 👁️ FUNCIÓN PARA LEVANTAR EL MODAL CON LA FOTO
+        function abrirFicha(rutaImagen) {
+            const modal = document.getElementById("mi-modal-visor");
+            const imgGrande = document.getElementById("imagen-ficha-grande");
+            
+            imgGrande.src = rutaImagen;
+            modal.style.display = "flex";
+        }
+
+        // ✕ FUNCIÓN PARA APAGAR EL VISOR
+        function cerrarFicha() {
+            const modal = document.getElementById("mi-modal-visor");
+            modal.style.display = "none";
+        }
+
+        // 🔒 FUNCIÓN EXCLUSIVA ADMIN: Cambiar aspecto a Exmiembro
+        function marcarComoFuera(event, idTarjeta) {
+            event.stopPropagation(); // Evita que al dar clic al botón se intente abrir la foto
+            
+            const tarjeta = document.getElementById(idTarjeta);
+            if (!tarjeta) return;
+
+            if (!confirm("¿Deseas marcar a este participante como fuera del grupo definitivamente?")) return;
+
+            tarjeta.classList.add("ex-miembro");
+            
+            // Le inyectamos el cartelito visual de "Fuera"
+            if (!tarjeta.querySelector(".badge-fuera")) {
+                const badge = document.createElement("span");
+                badge.className = "badge-fuera";
+                badge.innerText = "Fuera del Grupo";
+                tarjeta.appendChild(badge);
+            }
+
+            // Ocultamos su botón porque ya se aplicó el cambio
+            const btn = tarjeta.querySelector(".btn-expulsar");
+            if (btn) btn.style.display = "none";
+
+            // Guardamos en memoria local qué tarjetas están dadas de baja
+            let exiliados = JSON.parse(localStorage.getItem("miembrosFuera")) || [];
+            if (!exiliados.includes(idTarjeta)) {
+                exiliados.push(idTarjeta);
+                localStorage.setItem("miembrosFuera", JSON.stringify(exiliados));
+            }
+        }
+
+        // Carga automática al refrescar la pantalla
+        function cargarEstadosExpulsados() {
+            let exiliados = JSON.parse(localStorage.getItem("miembrosFuera")) || [];
+            exiliados.forEach(idTarjeta => {
+                const tarjeta = document.getElementById(idTarjeta);
+                if (tarjeta) {
+                    tarjeta.classList.add("ex-miembro");
+                    if (!tarjeta.querySelector(".badge-fuera")) {
+                        const badge = document.createElement("span");
+                        badge.className = "badge-fuera";
+                        badge.innerText = "Fuera del Grupo";
+                        tarjeta.appendChild(badge);
+                    }
+                    const btn = tarjeta.querySelector(".btn-expulsar");
+                    if (btn) btn.style.display = "none";
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Encuestas y Votaciones</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 15px;
+            color: #333;
+        }
+
+        .contenedor {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            border-top: 5px solid #075e54;
+        }
+
+        .card h2, .card h3 {
+            color: #075e54;
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        /* Formulario del Creador de Encuestas */
+        .campo-grupo {
+            margin-bottom: 15px;
+        }
+
+        .campo-grupo label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .input-estilo {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .opcion-input-fila {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .btn-primario { background-color: #075e54; color: white; }
+        .btn-secundario { background-color: #25d366; color: white; }
+        .btn-peligro { background-color: #d32f2f; color: white; }
+
+        /* Diseño de la Encuesta Publicada */
+        .encuesta-item {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+            position: relative;
+        }
+
+        .titulo-pregunta {
+            font-size: 18px;
+            font-weight: bold;
+            color: #054c43;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .ganador-badge {
+            background-color: #25d366;
+            color: #054c43;
+            padding: 3px 8px;
+            font-size: 11px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .opcion-voto-caja {
+            background: white;
+            border: 1px solid #eee;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .opcion-voto-caja:hover {
+            background: #f1f8f5;
+        }
+
+        .opcion-voto-caja.votada {
+            border-color: #25d366;
+            background: #e8f7f0;
+            font-weight: bold;
+        }
+
+        /* Sección secreta de Auditoría para Admins */
+        .panel-auditoria {
+            background: #eef1f6;
+            border-left: 4px solid #054c43;
+            padding: 10px 15px;
+            margin-top: 15px;
+            border-radius: 0 6px 6px 0;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="contenedor">
+        
+        <div id="panel-creador-encuesta" class="card" style="display: none; border-top-color: #128c7e;">
+            <h2>📊 Crear Nueva Encuesta Grupal</h2>
+            
+            <div class="campo-grupo">
+                <label>Título de la Encuesta:</label>
+                <input type="text" id="txt-pregunta" class="input-estilo" placeholder="Ej. ¿Vemos una película hoy?">
+            </div>
+
+            <div class="campo-grupo">
+                <label>Opciones de respuesta:</label>
+                <div id="contenedor-opciones-dinamicas">
+                    <div class="opcion-input-fila">
+                        <input type="text" class="input-estilo txt-opcion-item" placeholder="Opción 1">
+                    </div>
+                    <div class="opcion-input-fila">
+                        <input type="text" class="input-estilo txt-opcion-item" placeholder="Opción 2">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primario" onclick="agregarCampoOpcion()" style="margin-top: 5px; padding: 5px 10px; font-size: 12px;">➕ Añadir otra opción</button>
+            </div>
+
+            <button onclick="publicarEncuesta()" class="btn btn-secundario" style="width: 100%; font-size: 16px; padding: 10px;"> Subir Encuesta al Grupo</button>
+        </div>
+
+        <div class="card">
+            <h3>🗳️ Encuestas en Curso</h3>
+            <div id="contenedor-encuestas-publicadas">
+                <p id="encuestas-vacias" style="color: #777; font-style: italic; text-align: center;">No hay ninguna votación activa en este momento —</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let nombreUsuarioGlobal = "Participante";
+        let rolUsuarioGlobal = "miembro";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            nombreUsuarioGlobal = localStorage.getItem("nombreUsuario") || "Participante";
+            rolUsuarioGlobal = (localStorage.getItem("rolUsuario") || "miembro").toLowerCase().trim();
+
+            // Si es admin, mostramos el formulario de creación superior
+            const panelCreador = document.getElementById("panel-creador-encuesta");
+            if (rolUsuarioGlobal === "admin" && panelCreador) {
+                panelCreador.style.display = "block";
+            }
+
+            renderizarEncuestas();
+        });
+
+        // Añade un nuevo campo de texto para crear más opciones infinitas
+        function agregarCampoOpcion() {
+            const contenedor = document.getElementById("contenedor-opciones-dinamicas");
+            const numActual = contenedor.getElementsByClassName("opcion-input-fila").length + 1;
+            
+            const nuevaFila = document.createElement("div");
+            nuevaFila.className = "opcion-input-fila";
+            nuevaFila.innerHTML = `<input type="text" class="input-estilo txt-opcion-item" placeholder="Opción ${numActual}">`;
+            contenedor.appendChild(nuevaFila);
+        }
+
+        // Proceso de publicación
+        function publicarEncuesta() {
+            const txtPregunta = document.getElementById("txt-pregunta").value.trim();
+            const inputsOpciones = document.getElementsByClassName("txt-opcion-item");
+            
+            let opcionesListadas = [];
+            for (let input of inputsOpciones) {
+                let valor = input.value.trim();
+                if (valor !== "") {
+                    opcionesListadas.push({ texto: valor, votos: 0 });
+                }
+            }
+
+            if (txtPregunta === "" || opcionesListadas.length < 2) {
+                alert("Debes rellenar la pregunta y al menos 2 opciones.");
+                return;
+            }
+
+            let encuestas = JSON.parse(localStorage.getItem("encuestasGrupales")) || [];
+            encuestas.push({
+                id: Date.now(),
+                pregunta: txtPregunta,
+                opciones: opcionesListadas,
+                votosDetalle: [] // Guarda quién votó y qué votó
+            });
+
+            localStorage.setItem("encuestasGrupales", JSON.stringify(encuestas));
+
+            // Limpiamos el formulario y restablecemos los inputs base
+            document.getElementById("txt-pregunta").value = "";
+            document.getElementById("contenedor-opciones-dinamicas").innerHTML = `
+                <div class="opcion-input-fila"><input type="text" class="input-estilo txt-opcion-item" placeholder="Opción 1"></div>
+                <div class="opcion-input-fila"><input type="text" class="input-estilo txt-opcion-item" placeholder="Opción 2"></div>
+            `;
+
+            renderizarEncuestas();
+            alert("¡Encuesta publicada correctamente!");
+        }
+
+        // Dibuja las encuestas en pantalla calculando los votos
+        function renderizarEncuestas() {
+            const contenedor = document.getElementById("contenedor-encuestas-publicadas");
+            let encuestas = JSON.parse(localStorage.getItem("encuestasGrupales")) || [];
+
+            if (encuestas.length === 0) {
+                contenedor.innerHTML = `<p id="encuestas-vacias" style="color: #777; font-style: italic; text-align: center;">No hay ninguna votación activa en este momento —</p>`;
+                return;
+            }
+
+            contenedor.innerHTML = "";
+
+            encuestas.forEach(enc => {
+                // Evaluamos cuál es la opción ganadora (la que tenga más votos y que sea mayor a 0)
+                let maxVotos = 0;
+                enc.opciones.forEach(o => { if (o.votos > maxVotos) maxVotos = o.votos; });
+
+                // Comprobamos si este usuario ya votó en esta encuesta en específico
+                const yaVoto = enc.votosDetalle.find(v => v.usuario === nombreUsuarioGlobal);
+
+                const itemHtml = document.createElement("div");
+                itemHtml.className = "encuesta-item";
+
+                let cuerpo = `<div class="titulo-pregunta">📊 ${enc.pregunta}</div>`;
+
+                // Renderizamos las opciones de votación
+                enc.opciones.forEach((opc, indice) => {
+                    const esGanador = opc.votos === maxVotos && maxVotos > 0;
+                    const esLaVotadaPorMi = yaVoto && yaVoto.opcionTexto === opc.texto;
+                    
+                    cuerpo += `
+                        <div class="opcion-voto-caja ${esLaVotadaPorMi ? 'votada' : ''}" onclick="registrarVoto(${enc.id}, ${indice})">
+                            <div>
+                                <span>${opc.texto}</span>
+                                ${esGanador ? '<span class="ganador-badge">🏆 Va ganando</span>' : ''}
+                            </div>
+                            <span style="color: #666; font-size: 13px;">${opc.votos} votos</span>
+                        </div>
+                    `;
+                });
+
+                // 🔒 EXCLUSIVO PARA ADMINS: Panel de Auditoría Secreta y Botón de borrar
+                if (rolUsuarioGlobal === "admin") {
+                    cuerpo += `<div class="panel-auditoria"><strong>🛡️ Registro de Auditoría (Solo Admins):</strong><br>`;
+                    if (enc.votosDetalle.length === 0) {
+                        cuerpo += `<span style="color:#777; font-style:italic;">Nadie ha votado todavía.</span>`;
+                    } else {
+                        enc.votosDetalle.forEach(v => {
+                            cuerpo += `• <b>${v.usuario}</b> votó por "${v.opcionTexto}"<br>`;
+                        });
+                    }
+                    cuerpo += `</div>`;
+                    
+                    // Botón para que el admin liquide la encuesta
+                    cuerpo += `
+                        <button class="btn btn-peligro" onclick="eliminarEncuesta(${enc.id})" style="margin-top:15px; font-size:12px; padding:4px 10px; width:100%;">
+                            ❌ Eliminar Votación Definitivamente
+                        </button>
+                    `;
+                }
+
+                itemHtml.innerHTML = cuerpo;
+                contenedor.appendChild(itemHtml);
+            });
+        }
+
+        // Lógica de votación estricta (1 solo voto por persona)
+        function registrarVoto(idEncuesta, indiceOpcion) {
+            let encuestas = JSON.parse(localStorage.getItem("encuestasGrupales")) || [];
+            let enc = encuestas.find(e => e.id === idEncuesta);
+
+            if (!enc) return;
+
+            // Bloqueo: Si ya existe un registro de este usuario, cancelamos la operación
+            const yaVoto = enc.votosDetalle.find(v => v.usuario === nombreUsuarioGlobal);
+            if (yaVoto) {
+                alert("Ya has emitido tu voto en esta encuesta. Solo se permite votar una vez.");
+                return;
+            }
+
+            // Sumamos el voto en el contador global de esa opción
+            enc.opciones[indiceOpcion].votos += 1;
+            
+            // Guardamos el apunte confidencial para los admins
+            enc.votosDetalle.push({
+                usuario: nombreUsuarioGlobal,
+                opcionTexto: enc.opciones[indiceOpcion].texto
+            });
+
+            localStorage.setItem("encuestasGrupales", JSON.stringify(encuestas));
+            renderizarEncuestas();
+        }
+
+        // Función del Administrador para borrar encuestas
+        function eliminarEncuesta(idEncuesta) {
+            if (!confirm("¿Estás segura de cerrar y eliminar esta encuesta por completo?")) return;
+
+            let encuestas = JSON.parse(localStorage.getItem("encuestasGrupales")) || [];
+            encuestas = encuestas.filter(e => e.id !== idEncuesta);
+
+            localStorage.setItem("encuestasGrupales", JSON.stringify(encuestas));
+            renderizarEncuestas();
+        }
+    </script>
+</body>
+</html>

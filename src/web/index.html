@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Grupo de WhatsApp</title>
+    <style>
+        /* Esto es el CSS para que se vea limpio y moderno */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .login-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 350px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #075e54; /* Un verde estilo WhatsApp */
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        .input-group input:focus {
+            border-color: #25d366;
+            outline: none;
+        }
+
+        button {
+            background-color: #075e54;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #128c7e;
+        }
+
+        #mensaje-error {
+            color: red;
+            margin-top: 15px;
+            font-size: 14px;
+            display: none; /* Oculto por defecto */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <h2>🔒 Acceso al Grupo</h2>
+        
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="usuario">Usuario:</label>
+                <input type="text" id="usuario" placeholder="Ingresa tu usuario" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="contrasena">Contraseña:</label>
+                <input type="password" id="contrasena" placeholder="Ingresa tu contraseña" required>
+            </div>
+            
+            <button type="submit">Ingresar</button>
+        </form>
+
+        <p id="mensaje-error">Usuario o contraseña incorrectos.</p>
+    </div>
+
+    <script>
+      
+document.getElementById('loginForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const usuario = document.getElementById('usuario').value;
+    const contrasena = document.getElementById('contrasena').value;
+    const errorTxt = document.getElementById('mensaje-error');
+
+    fetch('http://localhost:8080/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `usuario=${encodeURIComponent(usuario)}&contrasena=${encodeURIComponent(contrasena)}`
+    })
+    .then(response => response.text())
+    .then(data => {
+        console.log("Respuesta del servidor:", data); 
+
+        if (data.startsWith("OK")) {
+            const partes = data.split(",");
+            const nombre = partes[1]; 
+            const rol = partes[2];    
+
+            // Guardamos el nombre y el rol en la memoria para que principal.html los use
+            localStorage.setItem("nombreUsuario", nombre);
+            localStorage.setItem("rolUsuario", rol);
+
+            // Redirecciona a la página del menú
+            window.location.href = "/principal";
+        } else {
+            // Si la etiqueta de error existe la muestra, si no, tira un alert
+            if (errorTxt) {
+                errorTxt.style.display = "block";
+            } else {
+                alert("Usuario o contraseña incorrectos.");
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert("No se pudo conectar con el servidor.");
+    });
+});
+    </script>
+</body>
+</html>

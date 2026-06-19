@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confesiones Anónimas y Reportes</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 15px;
+            color: #333;
+        }
+
+        .contenedor { max-width: 800px; margin: 0 auto; }
+
+        .card {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            border-top: 5px solid #075e54;
+        }
+
+        .card h2, .card h3 {
+            color: #075e54;
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        /* Caja de Texto y Selectores */
+        textarea {
+            width: 100%; height: 100px; padding: 12px;
+            border-radius: 8px; border: 1px solid #ccc;
+            resize: none; box-sizing: border-box;
+            font-family: inherit; font-size: 15px; margin-bottom: 15px;
+        }
+
+        .selectores-linea {
+            display: flex; gap: 15px; align-items: center;
+            margin-bottom: 15px; flex-wrap: wrap;
+        }
+
+        select {
+            padding: 8px 12px; border-radius: 5px;
+            border: 1px solid #ccc; background: white; font-weight: bold;
+        }
+
+        .btn {
+            padding: 9px 18px; border: none; border-radius: 5px;
+            cursor: pointer; font-weight: bold; font-size: 14px;
+        }
+        .btn-enviar { background-color: #075e54; color: white; }
+        .btn-reporte { background-color: #d32f2f; color: white; }
+        .btn-borrar {
+            background-color: rgba(211, 47, 47, 0.15); color: #d32f2f;
+            padding: 4px 10px; font-size: 11px; border-radius: 4px;
+        }
+        .btn-borrar:hover { background-color: #d32f2f; color: white; }
+
+        /* Muro de Confesiones con Estilos de Tarjetas Frecuentes */
+        .muro-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px; margin-top: 15px;
+        }
+
+        .tarjeta-confesion {
+            border-radius: 8px; padding: 18px; color: white;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; justify-content: space-between;
+            min-height: 140px; position: relative;
+        }
+
+        /* Paleta de Formatos Originales */
+        .bg-neon { background: linear-gradient(135deg, #651fff, #00e5ff); color: #fff; }
+        .bg-atardecer { background: linear-gradient(135deg, #ff3d00, #ffea00); color: #fff; }
+        .bg-espacial { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: #fff; }
+        .bg-fresa { background: linear-gradient(135deg, #ff007f, #ff758c); color: #fff; }
+        .bg-esmeralda { background: linear-gradient(135deg, #0ba360, #3cba92); color: #fff; }
+
+        .texto-cuerpo { font-size: 15px; line-height: 1.4; margin: 0 0 15px 0; word-break: break-word; }
+        .meta-datos { font-size: 11px; opacity: 0.8; display: flex; justify-content: space-between; align-items: center; }
+
+        .panel-admin-interno {
+            background: rgba(0, 0, 0, 0.25); border-radius: 4px;
+            padding: 3px 6px; font-size: 10px; font-weight: bold; margin-top: 5px;
+        }
+
+        /* Estilo de la Lista de Reportes */
+        .reporte-item {
+            background: #fdf2f2; border-left: 4px solid #d32f2f;
+            padding: 12px 15px; margin-bottom: 10px; border-radius: 0 6px 6px 0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="contenedor">
+        
+        <div class="card">
+            <h2>El Muro de las Confesiones Anónimas</h2>
+            <p style="font-size:14px; color:#666;">Nadie en el grupo sabrá quién eres. Escribe alguna confesion o comentario anonimo.</p>
+            
+            <textarea id="txt-confesion" placeholder="Escribe tu secreto o confesión aquí de manera anónima..."></textarea>
+            
+            <div class="selectores-linea">
+                <label>🎨 Estilo de Tarjeta:</label>
+                <select id="select-estilo">
+                    <option value="bg-neon">🔮 Degradado Neón</option>
+                    <option value="bg-atardecer">🔥 Atardecer Ardiente</option>
+                    <option value="bg-espacial">🌌 Vacío Espacial</option>
+                    <option value="bg-fresa">🍓 Fresa Dulce</option>
+                    <option value="bg-esmeralda">🐉 Dragón Esmeralda</option>
+                </select>
+                <button onclick="publicarConfesion()" class="btn btn-enviar" style="margin-left: auto;">Subir al Muro</button>
+            </div>
+
+            <div id="muro-confesiones" class="muro-grid">
+                </div>
+        </div>
+
+        <div class="card" style="border-top-color: #d32f2f;">
+            <h2>🚨 Buzón de Reportes</h2>
+            <p style="font-size:14px; color:#666;">¿Ocurrió un problema, altercado o infracción? Informalo directamente a los administradores.</p>
+            <textarea id="txt-reporte" placeholder="Describe detalladamente tu reporte, queja o denuncia hacia algún miembro..."></textarea>
+            <button onclick="enviarReporte()" class="btn btn-reporte" style="width: 100%;">Enviar Reporte privado</button>
+        </div>
+
+        <div id="panel-privado-reportes" class="card" style="display: none; border-top-color: #054c43;">
+            <h3>🛡️ Denuncias Recibidas (Solo admins)</h3>
+            <div id="lista-reportes-admins">
+                <p style="color:#777; font-style:italic;">No hay reportes ni denuncias registradas.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let nombreUsuarioGlobal = "Participante";
+        let rolUsuarioGlobal = "miembro";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            nombreUsuarioGlobal = localStorage.getItem("nombreUsuario") || "Participante";
+            rolUsuarioGlobal = (localStorage.getItem("rolUsuario") || "miembro").toLowerCase().trim();
+
+            // Mostrar el panel de reportes solo a los administradores
+            if (rolUsuarioGlobal === "admin") {
+                const panel = document.getElementById("panel-privado-reportes");
+                if (panel) panel.style.display = "block";
+            }
+
+            renderizarMuro();
+            renderizarReportes();
+        });
+
+        // 🤫 LÓGICA DE CONFESIONES
+        function publicarConfesion() {
+            const texto = document.getElementById("txt-confesion").value.trim();
+            const estilo = document.getElementById("select-estilo").value;
+
+            if (texto === "") {
+                alert("No puedes publicar una confesión vacía.");
+                return;
+            }
+
+            const fechaActual = new Date().toLocaleString();
+
+            let confesiones = JSON.parse(localStorage.getItem("muroConfesiones")) || [];
+            confesiones.push({
+                id: Date.now(),
+                autor: nombreUsuarioGlobal, // Se almacena oculto para el público
+                texto: texto,
+                estilo: estilo,
+                fecha: fechaActual
+            });
+
+            localStorage.setItem("muroConfesiones", JSON.stringify(confesiones));
+            document.getElementById("txt-confesion").value = "";
+            renderizarMuro();
+        }
+
+        function renderizarMuro() {
+            const contenedor = document.getElementById("muro-confesiones");
+            let confesiones = JSON.parse(localStorage.getItem("muroConfesiones")) || [];
+
+            contenedor.innerHTML = "";
+
+            if (confesiones.length === 0) {
+                contenedor.innerHTML = `<p style="color: #777; font-style: italic; grid-column: 1/-1; text-align: center;">El confesionario está vacío...</p>`;
+                return;
+            }
+
+            confesiones.forEach(c => {
+                const item = document.createElement("div");
+                item.className = `tarjeta-confesion ${c.estilo}`;
+
+                let html = `<p class="texto-cuerpo">"${c.texto}"</p>`;
+                html += `<div class="meta-datos"><span>📅 ${c.fecha}</span>`;
+
+                // Botón condicional de borrado
+                // Si soy el creador de la confesión O soy administrador, puedo borrarla
+                if (c.autor === nombreUsuarioGlobal || rolUsuarioGlobal === "admin") {
+                    html += `<button class="btn btn-borrar" onclick="borrarConfesion(${c.id})">🗑️ Borrar</button>`;
+                }
+                html += `</div>`;
+
+                // 🛡️ OJO DE ADMIN: Revelar autor exclusivamente a los administradores en una viñeta interna
+                if (rolUsuarioGlobal === "admin") {
+                    html += `<div class="panel-admin-interno">👁️ Autor Real: ${c.autor}</div>`;
+                }
+
+                item.innerHTML = html;
+                contenedor.appendChild(item);
+            });
+        }
+
+        function borrarConfesion(id) {
+            if (!confirm("¿Deseas eliminar esta confesión permanentemente del muro?")) return;
+            let confesiones = JSON.parse(localStorage.getItem("muroConfesiones")) || [];
+            confesiones = confesiones.filter(c => c.id !== id);
+            localStorage.setItem("muroConfesiones", JSON.stringify(confesiones));
+            renderizarMuro();
+        }
+
+
+        // 🚨 LÓGICA DE REPORTES
+        function enviarReporte() {
+            const texto = document.getElementById("txt-reporte").value.trim();
+            if (texto === "") {
+                alert("Por favor redacta la queja o reporte antes de enviar.");
+                return;
+            }
+
+            let reportes = JSON.parse(localStorage.getItem("listaReportesOficiales")) || [];
+            reportes.push({
+                id: Date.now(),
+                usuario: nombreUsuarioGlobal, // El autor que lo emite
+                texto: texto
+            });
+
+            localStorage.setItem("listaReportesOficiales", JSON.stringify(reportes));
+            document.getElementById("txt-reporte").value = "";
+            alert("🚨 Tu reporte ha sido entregado en secreto al staff de administradores.");
+            renderizarReportes();
+        }
+
+        function renderizarReportes() {
+            const listaAdmins = document.getElementById("lista-reportes-admins");
+            if (!listaAdmins) return;
+
+            let reportes = JSON.parse(localStorage.getItem("listaReportesOficiales")) || [];
+            listaAdmins.innerHTML = "";
+
+            if (reportes.length === 0) {
+                listaAdmins.innerHTML = `<p style="color:#777; font-style:italic;">No hay reportes ni denuncias registradas.</p>`;
+                return;
+            }
+
+            reportes.forEach(r => {
+                const fila = document.createElement("div");
+                fila.className = "reporte-item";
+                fila.innerHTML = `
+                    <div>
+                        <strong>👤 De: ${r.usuario}</strong><br>
+                        <span style="color:#555;">📋 ${r.texto}</span>
+                    </div>
+                    <button class="btn btn-borrar" onclick="borrarReporte(${r.id})">❌ Archivar</button>
+                `;
+                listaAdmins.appendChild(fila);
+            });
+        }
+
+        function borrarReporte(id) {
+            if (!confirm("¿Deseas eliminar o archivar este reporte del panel?")) return;
+            let reportes = JSON.parse(localStorage.getItem("listaReportesOficiales")) || [];
+            reportes = reportes.filter(r => r.id !== id);
+            localStorage.setItem("listaReportesOficiales", JSON.stringify(reportes));
+            renderizarReportes();
+        }
+    </script>
+</body>
+</html>

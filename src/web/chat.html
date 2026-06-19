@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Grupal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 15px;
+            color: #333;
+            height: 95vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .contenedor-chat {
+            max-width: 850px;
+            width: 100%;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border-top: 5px solid #075e54;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background-color: #f4f6f9;
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-header h2 {
+            margin: 0;
+            color: #075e54;
+            font-size: 18px;
+        }
+
+        .chat-header span {
+            font-size: 12px;
+            color: #25d366;
+            font-weight: bold;
+            background-color: #e8f7f0;
+            padding: 4px 8px;
+            border-radius: 20px;
+        }
+
+        /* Zona de Mensajes */
+        .pantalla-mensajes {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #efeae2; /* Color clásico de fondo de chat */
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Burbujas de Mensaje */
+        .burbuja-msg {
+            max-width: 70%;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14.5px;
+            line-height: 1.4;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* Mensajes de otros participantes */
+        .msg-otro {
+            background-color: white;
+            align-self: flex-start;
+            border-top-left-radius: 0;
+        }
+
+        /* Mis propios mensajes */
+        .msg-mio {
+            background-color: #d9fdd3; /* Verde clarito de WhatsApp */
+            align-self: flex-end;
+            border-top-right-radius: 0;
+        }
+
+        .msg-autor {
+            font-weight: bold;
+            font-size: 12px;
+            color: #0b806f;
+            margin-bottom: 3px;
+        }
+        
+        .msg-mio .msg-autor {
+            color: #075e54;
+        }
+
+        .msg-texto {
+            word-break: break-word;
+            margin-bottom: 5px;
+        }
+
+        .msg-meta {
+            font-size: 10px;
+            color: #777;
+            align-self: flex-end;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-eliminar-msg {
+            background: none;
+            border: none;
+            color: #d32f2f;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 0;
+        }
+        .btn-eliminar-msg:hover { text-decoration: underline; }
+
+        /* Barra Inferior de Envío */
+        .chat-input-barra {
+            padding: 15px;
+            background-color: #f0f2f5;
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .input-chat {
+            flex-grow: 1;
+            padding: 12px;
+            border-radius: 25px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .btn-enviar-chat {
+            background-color: #075e54;
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .btn-enviar-chat:hover { background-color: #054c43; }
+    </style>
+</head>
+<body>
+
+    <div class="contenedor-chat">
+        <div class="chat-header">
+            <h2>💬 Chat grupal</h2>
+            <span>🟢 Sala Activa</span>
+        </div>
+
+        <div class="pantalla-mensajes" id="caja-mensajes">
+            </div>
+
+        <div class="chat-input-barra">
+            <input type="text" id="txt-mensaje-chat" class="input-chat" placeholder="Escribe un mensaje..." onkeypress="evaluarTecla(event)">
+            <button onclick="enviarMensajeChat()" class="btn-enviar-chat">➤</button>
+        </div>
+    </div>
+
+    <script>
+        let nombreUsuarioGlobal = "Participante";
+        let rolUsuarioGlobal = "miembro";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            nombreUsuarioGlobal = localStorage.getItem("nombreUsuario") || "Participante";
+            rolUsuarioGlobal = (localStorage.getItem("rolUsuario") || "miembro").toLowerCase().trim();
+
+            cargarMensajes();
+            
+            // Auto-refrescar el chat cada 3 segundos por si alguien más escribe
+            setInterval(cargarMensajes, 3000);
+        });
+
+        // Detectar si el usuario presiona Enter para mandar el mensaje rápido
+        function evaluarTecla(event) {
+            if (event.key === "Enter") {
+                enviarMensajeChat();
+            }
+        }
+
+        // Lógica para enviar el mensaje
+        function enviarMensajeChat() {
+            const input = document.getElementById("txt-mensaje-chat");
+            const texto = input.value.trim();
+
+            if (texto === "") return;
+
+            const horaActual = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            let chatGlobal = JSON.parse(localStorage.getItem("chatArchivoProhibido")) || [];
+            chatGlobal.push({
+                id: Date.now(),
+                autor: nombreUsuarioGlobal,
+                texto: texto,
+                hora: horaActual
+            });
+
+            localStorage.setItem("chatArchivoProhibido", JSON.stringify(chatGlobal));
+            input.value = ""; // Limpiar input
+            cargarMensajes();
+        }
+
+        // Cargar y pintar las burbujas en pantalla
+        function cargarMensajes() {
+            const caja = document.getElementById("caja-mensajes");
+            if (!caja) return;
+
+            let chatGlobal = JSON.parse(localStorage.getItem("chatArchivoProhibido")) || [];
+            
+            // Guardar la posición del scroll actual
+            const estabaAbajo = (caja.scrollHeight - caja.scrollTop <= caja.clientHeight + 50);
+
+            caja.innerHTML = "";
+
+            if (chatGlobal.length === 0) {
+                caja.innerHTML = `<p style="color: #777; font-style: italic; text-align: center; margin-top: 20px;">No hay mensajes en el grupo. ¡Sé el primero en saludar!</p>`;
+                return;
+            }
+
+            chatGlobal.forEach(m => {
+                const esMio = m.autor === nombreUsuarioGlobal;
+                const burbuja = document.createElement("div");
+                
+                // Asignamos la clase visual según quién lo escribió
+                burbuja.className = `burbuja-msg ${esMio ? 'msg-mio' : 'msg-otro'}`;
+
+                let html = `
+                    <span class="msg-autor">${m.autor}</span>
+                    <span class="msg-texto">${m.texto}</span>
+                    <div class="msg-meta">
+                        <span>${m.hora}</span>
+                `;
+
+                // 🛡️ REGLA DE BORRADO: Si el mensaje es mío O soy administrador, veo el botón de eliminar
+                if (esMio || rolUsuarioGlobal === "admin") {
+                    html += `<button class="btn-eliminar-msg" onclick="borrarMensajeChat(${m.id})">• Eliminar</button>`;
+                }
+
+                html += `</div>`;
+                burbuja.innerHTML = html;
+                caja.appendChild(burbuja);
+            });
+
+            // Si el usuario estaba leyendo los últimos mensajes, bajamos el scroll automáticamente
+            if (estabaAbajo) {
+                caja.scrollTop = caja.scrollHeight;
+            }
+        }
+
+        // Eliminar mensaje de la memoria
+        function borrarMensajeChat(idMsg) {
+            if (!confirm("¿Deseas eliminar este mensaje para todos?")) return;
+
+            let chatGlobal = JSON.parse(localStorage.getItem("chatArchivoProhibido")) || [];
+            chatGlobal = chatGlobal.filter(m => m.id !== idMsg);
+
+            localStorage.setItem("chatArchivoProhibido", JSON.stringify(chatGlobal));
+            cargarMensajes();
+        }
+    </script>
+</body>
+</html>

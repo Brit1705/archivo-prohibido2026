@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control de Reportes - Staff</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 15px;
+            color: #333;
+        }
+
+        .contenedor {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            border-top: 5px solid #d32f2f; /* Rojo de alerta */
+        }
+
+        .card h2 {
+            color: #b71c1c;
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Diseño de Tarjetas de Denuncia */
+        .tarjeta-reporte {
+            background-color: #fff5f5;
+            border: 1px solid #ffcdd2;
+            border-left: 5px solid #d32f2f;
+            border-radius: 6px;
+            padding: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: transform 0.2s;
+        }
+
+        .tarjeta-reporte:hover {
+            transform: translateX(3px);
+            box-shadow: 0 2px 8px rgba(211, 47, 47, 0.08);
+        }
+
+        .cabecera-reporte {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dashed #ffcdd2;
+            padding-bottom: 8px;
+            font-size: 13.5px;
+        }
+
+        .emisor-badge {
+            background-color: #d32f2f;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .texto-queja {
+            font-size: 15px;
+            line-height: 1.5;
+            color: #2c3e50;
+            word-break: break-word;
+            margin: 0;
+        }
+
+        /* Botonera de acciones */
+        .bloque-botones {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 5px;
+        }
+
+        .btn {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+        }
+
+        .btn-archivar {
+            background-color: #757575;
+            color: white;
+        }
+        .btn-archivar:hover { background-color: #616161; }
+
+        .btn-juicio {
+            background-color: #8e7037;
+            color: white;
+        }
+        .btn-juicio:hover { background-color: #735a2b; }
+    </style>
+</head>
+<body>
+
+    <div class="contenedor">
+        
+        <div class="card">
+            <h2>🚨 Centro de Control: Reportes</h2>
+            <p style="font-size: 14.5px; color: #666; margin-bottom: 20px;">
+                Bandeja de entrada oficial para los reportes enviados por los usuarios.
+            </p>
+
+            <!-- Aquí caen dinámicamente los reportes -->
+            <div id="bandeja-reportes">
+                <p style="color: #777; font-style: italic; text-align: center; padding: 20px;">No hay reportes pendientes.️</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            renderizarBandejaReportes();
+
+            // Auto-refrescar cada 5 segundos para capturar reportes nuevos en tiempo real
+            setInterval(renderizarBandejaReportes, 5000);
+        });
+
+        function renderizarBandejaReportes() {
+            const contenedor = document.getElementById("bandeja-reportes");
+            if (!contenedor) return;
+
+            // Leemos la misma llave de LocalStorage que usa el formulario de confesiones
+            let reportes = JSON.parse(localStorage.getItem("listaReportesOficiales")) || [];
+
+            if (reportes.length === 0) {
+                contenedor.innerHTML = `<p style="color: #777; font-style: italic; text-align: center; padding: 20px;">No hay reportes pendientes. ¡El grupo está en perfecta armonía! 🕊️</p>`;
+                return;
+            }
+
+            contenedor.innerHTML = "";
+
+            reportes.forEach(rep => {
+                const item = document.createElement("div");
+                item.className = "tarjeta-reporte";
+
+                item.innerHTML = `
+                    <div class="cabecera-reporte">
+                        <span>👤 Emitido por: <span class="emisor-badge">${rep.usuario}</span></span>
+                    </div>
+                    <p class="texto-queja">" ${rep.texto} "</p>
+                    <div class="bloque-botones">
+                        <button class="btn btn-archivar" onclick="archivarReporte(${rep.id})">📁 Archivar Solución</button>
+                        <button class="btn btn-juicio" onclick="enviarAlTribunal(${rep.id}, '${rep.usuario}', \`${rep.texto}\`)">⚖️ Enviar a Juicio</button>
+                    </div>
+                `;
+                contenedor.appendChild(item);
+            });
+        }
+
+        // Opción 1: Archivar / Borrar de la lista
+        function archivarReporte(id) {
+            if (!confirm("¿Deseas archivar este reporte? Se eliminará de la lista definitivamente.")) return;
+
+            let reportes = JSON.parse(localStorage.getItem("listaReportesOficiales")) || [];
+            reportes = reportes.filter(r => r.id !== id);
+            localStorage.setItem("listaReportesOficiales", JSON.stringify(reportes));
+
+            renderizarBandejaReportes();
+        }
+
+        // Opción 2: Botón mágico que prellena el Tribunal y elimina el reporte
+        function enviarAlTribunal(id, emisor, textoQueja) {
+            if (!confirm(`¿Estás segura de procesar esta queja como una causa judicial en El Tribunal?`)) return;
+
+            // Creamos la estructura exacta del juicio con los datos del reporte automatizados
+            const casoJudicial = {
+                id: Date.now(),
+                delito: `Infracción reportada por ${emisor}: ${textoQueja}`,
+                demandante: emisor,
+                demandado: "Por determinar en el estrado",
+                juez: "Agustín",
+                testigos: "Todo el grupo presente",
+                abogDem: "Por asignar",
+                abogAcu: "Por asignar",
+                fecha: new Date().toLocaleString(),
+                chat: [{ autor: "SISTEMA", texto: `--- Juicio iniciado automáticamente desde la central de reportes por la queja de ${emisor}. ---` }],
+                votos: { culpable: 0, inocente: 0, quienesVotaron: [] },
+                permisosVoz: []
+            };
+
+            // Lo inyectamos directo en la mesa de debates del tribunal
+            localStorage.setItem("juicioActivo", JSON.stringify(casoJudicial));
+
+            // Removemos el reporte de la bandeja porque ya se transformó en juicio
+            let reportes = JSON.parse(localStorage.getItem("listaReportesOficiales")) || [];
+            reportes = reportes.filter(r => r.id !== id);
+            localStorage.setItem("listaReportesOficiales", JSON.stringify(reportes));
+
+            alert("🔨 Caso transferido con éxito. ¡La sesión en El Tribunal ha sido abierta de manera automática!");
+            renderizarBandejaReportes();
+        }
+    </script>
+</body>
+</html>
