@@ -1,17 +1,24 @@
-# 1. Usamos una imagen oficial de Java de peso ligero
-FROM openjdk:17-jdk-slim
+# 1. Usamos la imagen oficial y actualizada de Eclipse Temurin (Java 17)
+FROM eclipse-temurin:17-jdk-jammy
 
-# 2. Creamos la carpeta de trabajo dentro del servidor de internet
+# 2. Creamos la carpeta de trabajo en el servidor
 WORKDIR /app
 
-# 3. Copiamos todo nuestro código y carpetas (incluyendo src y carpetas web) al servidor
+# 3. Instalamos 'curl' para descargar el conector de MySQL de forma automática
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# 4. Creamos una carpeta para las librerías y descargamos el conector MySQL JDBC oficial
+RUN mkdir -p lib && \
+    curl -L -o lib/mysql-connector-j.jar https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.3.0/mysql-connector-j-8.3.0.jar
+
+# 5. Copiamos todo nuestro código fuente y archivos web al servidor
 COPY . .
 
-# 4. Compilamos el archivo principal de Java apuntando a su ruta correcta
-RUN javac -d bin src/servidorgrupo/ServidorGrupo.java
+# 6. Compilamos el código enlazando la librería del conector MySQL recién descargada
+RUN javac -cp "lib/mysql-connector-j.jar" -d bin src/servidorgrupo/ServidorGrupo.java
 
-# 5. Le decimos al servidor que exponga el puerto 8080 (donde escucha tu código)
+# 7. Exponemos el puerto de red 8080 que usa tu aplicación
 EXPOSE 8080
 
-# 6. El comando definitivo para encender tu programa
-CMD ["java", "-cp", "bin", "servidorgrupo.ServidorGrupo"]
+# 8. Comando definitivo de arranque incluyendo el Classpath con el Driver de MySQL y la carpeta bin
+CMD ["java", "-cp", "bin:lib/mysql-connector-j.jar", "servidorgrupo.ServidorGrupo"]
