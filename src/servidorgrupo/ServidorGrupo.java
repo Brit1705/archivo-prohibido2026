@@ -43,6 +43,8 @@ public class ServidorGrupo {
                 java.io.File file = new java.io.File("src/web/principal.html");
                 enviarArchivo(exchange, file, "text/html");
             }
+            // 🗑️ Ruta para borrar mensajes del Chat Grupal
+        server.createContext("/borrar-mensaje", new BorrarMensajeHandler());
         });
 
         // ⭐ Ruta específica para el archivo de las reglas
