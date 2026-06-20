@@ -283,10 +283,29 @@
         }
 
         // 🗑️ BORRADO VINCULADO PARA EL FUTURO HANDLER
+        // 🗑️ BORRADO REAL CONECTADO A INTERNET
         function borrarMensajeChat(idMsg) {
             if (!confirm("¿Deseas eliminar este mensaje de la base de datos para todos?")) return;
             
-            alert("¡Mensaje validado en pantalla! En la próxima sesión crearemos la ruta /borrar-mensaje en tu Java para que desaparezca también de Clever Cloud.");
+            // Hacemos la petición POST al Java enviando el ID del mensaje que queremos destruir
+            fetch('https://archivo-prohibido2026-production.up.railway.app/borrar-mensaje', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `id=${encodeURIComponent(idMsg)}`
+            })
+            .then(response => response.text())
+            .then(data => {
+                if (data === "OK") {
+                    cargarMensajes(); // Refrescamos el chat de inmediato para ver el cambio
+                } else {
+                    alert("No se pudo eliminar el mensaje.");
+                }
+            })
+            .catch(error => {
+                console.error('Error al borrar:', error);
+            });
         }
     </script>
 </body>
