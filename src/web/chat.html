@@ -182,105 +182,111 @@
         </div>
     </div>
 
-    <script>
+   <script>
         let nombreUsuarioGlobal = "Participante";
         let rolUsuarioGlobal = "miembro";
+        let idUsuarioLogueado = "";
 
         window.addEventListener('DOMContentLoaded', () => {
             nombreUsuarioGlobal = localStorage.getItem("nombreUsuario") || "Participante";
             rolUsuarioGlobal = (localStorage.getItem("rolUsuario") || "miembro").toLowerCase().trim();
+            
+            idUsuarioLogueado = nombreUsuarioGlobal; 
 
             cargarMensajes();
             
-            // Auto-refrescar el chat cada 3 segundos por si alguien más escribe
+            // Auto-refrescar el chat en vivo cada 3 segundos leyendo internet
             setInterval(cargarMensajes, 3000);
         });
 
-        // Detectar si el usuario presiona Enter para mandar el mensaje rápido
         function evaluarTecla(event) {
             if (event.key === "Enter") {
                 enviarMensajeChat();
             }
         }
 
-        // Lógica para enviar el mensaje
+        // 🚀 ENVIAR AL SERVIDOR REMOTO (CLEVER CLOUD)
         function enviarMensajeChat() {
             const input = document.getElementById("txt-mensaje-chat");
             const texto = input.value.trim();
 
             if (texto === "") return;
 
-            const horaActual = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            let chatGlobal = JSON.parse(localStorage.getItem("chatArchivoProhibido")) || [];
-            chatGlobal.push({
-                id: Date.now(),
-                autor: nombreUsuarioGlobal,
-                texto: texto,
-                hora: horaActual
+            fetch('https://archivo-prohibido2026-production.up.railway.app/enviar-mensaje', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `usuario=${encodeURIComponent(idUsuarioLogueado)}&nombre=${encodeURIComponent(nombreUsuarioGlobal)}&mensaje=${encodeURIComponent(texto)}`
+            })
+            .then(response => response.text())
+            .then(data => {
+                if (data === "OK") {
+                    input.value = ""; 
+                    cargarMensajes(); 
+                } else {
+                    alert("Error al enviar el mensaje.");
+                }
+            })
+            .catch(error => {
+                console.error('Error al enviar:', error);
             });
-
-            localStorage.setItem("chatArchivoProhibido", JSON.stringify(chatGlobal));
-            input.value = ""; // Limpiar input
-            cargarMensajes();
         }
 
-        // Cargar y pintar las burbujas en pantalla
+        // 📥 CARGAR HISTORIAL EN VIVO DESDE INTERNET
         function cargarMensajes() {
             const caja = document.getElementById("caja-mensajes");
             if (!caja) return;
 
-            let chatGlobal = JSON.parse(localStorage.getItem("chatArchivoProhibido")) || [];
-            
-            // Guardar la posición del scroll actual
-            const estabaAbajo = (caja.scrollHeight - caja.scrollTop <= caja.clientHeight + 50);
+            const estabaAbajo = (caja.scrollHeight - caja.scrollTop <= caja.clientHeight + 80);
 
-            caja.innerHTML = "";
+            fetch('https://archivo-prohibido2026-production.up.railway.app/obtener-mensajes')
+            .then(response => response.json())
+            .then(chatGlobal => {
+                caja.innerHTML = "";
 
-            if (chatGlobal.length === 0) {
-                caja.innerHTML = `<p style="color: #777; font-style: italic; text-align: center; margin-top: 20px;">No hay mensajes en el grupo. ¡Sé el primero en saludar!</p>`;
-                return;
-            }
-
-            chatGlobal.forEach(m => {
-                const esMio = m.autor === nombreUsuarioGlobal;
-                const burbuja = document.createElement("div");
-                
-                // Asignamos la clase visual según quién lo escribió
-                burbuja.className = `burbuja-msg ${esMio ? 'msg-mio' : 'msg-otro'}`;
-
-                let html = `
-                    <span class="msg-autor">${m.autor}</span>
-                    <span class="msg-texto">${m.texto}</span>
-                    <div class="msg-meta">
-                        <span>${m.hora}</span>
-                `;
-
-                // 🛡️ REGLA DE BORRADO: Si el mensaje es mío O soy administrador, veo el botón de eliminar
-                if (esMio || rolUsuarioGlobal === "admin") {
-                    html += `<button class="btn-eliminar-msg" onclick="borrarMensajeChat(${m.id})">• Eliminar</button>`;
+                if (chatGlobal.length === 0) {
+                    caja.innerHTML = `<p style="color: #777; font-style: italic; text-align: center; margin-top: 20px;">No hay mensajes en el grupo. ¡Sé el primero en saludar!</p>`;
+                    return;
                 }
 
-                html += `</div>`;
-                burbuja.innerHTML = html;
-                caja.appendChild(burbuja);
-            });
+                chatGlobal.forEach(m => {
+                    const esMio = m.autor === nombreUsuarioGlobal;
+                    const burbuja = document.createElement("div");
+                    
+                    burbuja.className = `burbuja-msg ${esMio ? 'msg-mio' : 'msg-otro'}`;
 
-            // Si el usuario estaba leyendo los últimos mensajes, bajamos el scroll automáticamente
-            if (estabaAbajo) {
-                caja.scrollTop = caja.scrollHeight;
-            }
+                    let html = `
+                        <span class="msg-autor">${m.autor}</span>
+                        <span class="msg-texto">${m.texto}</span>
+                        <div class="msg-meta">
+                            <span>${m.hora}</span>
+                    `;
+
+                    // Mantenemos tu regla importante de seguridad intacta
+                    if (esMio || rolUsuarioGlobal === "admin") {
+                        html += `<button class="btn-eliminar-msg" onclick="borrarMensajeChat(${m.id})">• Eliminar</button>`;
+                    }
+
+                    html += `</div>`;
+                    burbuja.innerHTML = html;
+                    caja.appendChild(burbuja);
+                });
+
+                if (estabaAbajo) {
+                    caja.scrollTop = caja.scrollHeight;
+                }
+            })
+            .catch(error => {
+                console.error("Error al recuperar el historial:", error);
+            });
         }
 
-        // Eliminar mensaje de la memoria
+        // 🗑️ BORRADO VINCULADO PARA EL FUTURO HANDLER
         function borrarMensajeChat(idMsg) {
-            if (!confirm("¿Deseas eliminar este mensaje para todos?")) return;
-
-            let chatGlobal = JSON.parse(localStorage.getItem("chatArchivoProhibido")) || [];
-            chatGlobal = chatGlobal.filter(m => m.id !== idMsg);
-
-            localStorage.setItem("chatArchivoProhibido", JSON.stringify(chatGlobal));
-            cargarMensajes();
+            if (!confirm("¿Deseas eliminar este mensaje de la base de datos para todos?")) return;
+            
+            alert("¡Mensaje validado en pantalla! En la próxima sesión crearemos la ruta /borrar-mensaje en tu Java para que desaparezca también de Clever Cloud.");
         }
     </script>
 </body>
