@@ -15,7 +15,6 @@ import java.util.Map;
 
 public class ServidorGrupo {
 
-    // 🔑 CREDENCIALES DE CLEVER CLOUD
     private static final String DB_HOST = "bifz9f7gbre71iqzrmft-mysql.services.clever-cloud.com";
     private static final String DB_NAME = "bifz9f7gbre71iqzrmft";
     private static final String DB_USER = "ue98nui8sigael4a";
@@ -23,7 +22,7 @@ public class ServidorGrupo {
     private static final String DB_PORT = "3306"; 
 
     public static void main(String[] args) throws IOException {
-        // 🌐 TRUCO MÁGICO: Leemos el puerto dinámico que nos da internet. Si no existe (estás en tu PC), usa el 8080.
+        
         String portVar = System.getenv("PORT");
         int puerto = (portVar != null) ? Integer.parseInt(portVar) : 8080;
 
@@ -32,6 +31,10 @@ public class ServidorGrupo {
         
         // 1. Ruta para el proceso de Login
         server.createContext("/login", new LoginHandler());
+        
+        // 💬 Rutas nuevas para el Chat Grupal Conectado a Clever Cloud
+        server.createContext("/enviar-mensaje", new EnviarMensajeHandler());
+        server.createContext("/obtener-mensajes", new ObtenerMensajesHandler());
         
         // 2. Ruta para servir la página Principal
         server.createContext("/principal", new HttpHandler() {
@@ -206,20 +209,16 @@ public class ServidorGrupo {
             }
         }
 
-  private String obtenerDatosUsuario(String usuario, String contrasena) {
+        private String obtenerDatosUsuario(String usuario, String contrasena) {
             String url = "jdbc:mysql://" + DB_HOST + ":" + DB_PORT + "/" + DB_NAME + "?useSSL=false&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
-            
-            // 🚀 TRUCO DE COMPATIBILIDAD: Usamos TRIM() para eliminar espacios invisibles al principio o al final
             String sql = "SELECT NombreMostrado, Rol FROM Usuarios WHERE TRIM(Usuario) = TRIM(?) AND TRIM(Contrasena) = TRIM(?)";
             
             try {
-                // Si las variables vienen vacías o nulas, evitamos hacer la consulta
                 if (usuario == null || contrasena == null) {
                     System.out.println("⚠️ Datos recibidos son nulos");
                     return null;
                 }
 
-                // Limpiamos espacios que se hayan colado en el envío de internet
                 String usuarioLimpio = usuario.trim();
                 String contrasenaLimpia = contrasena.trim();
 
@@ -246,7 +245,123 @@ public class ServidorGrupo {
                 e.printStackTrace();
             }
             return null;
-        
+        }
+    }
+
+    // 🚀 NUEVO HANDLER: Recibe y guarda los mensajes en la base de datos
+    static class EnviarMensajeHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                java.io.InputStream is = exchange.getRequestBody();
+                java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+                byte[] buffer = new byte[1024];
+                int len;
+                while ((len = is.read(buffer)) != -1) {
+                    bos.write(buffer, 0, len);
+                }
+                String query = bos.toString("UTF-8");
+
+                Map<String, String> params = new HashMap<>();
+                for (String param : query.split("&")) {
+                    String[] pair = param.split("=");
+                    if (pair.length > 1) {
+                        params.put(java.net.URLDecoder.decode(pair[0], "UTF-8"), java.net.URLDecoder.decode(pair[1], "UTF-8"));
+                    }
+                }
+
+                String usuario = params.get("usuario");
+                String nombre = params.get("nombre");
+                String mensaje = params.get("mensaje");
+
+                String url = "jdbc:mysql://" + DB_HOST + ":" + DB_PORT + "/" + DB_NAME + "?useSSL=false&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
+                String sql = "INSERT INTO MensajesChat (Usuario, NombreMostrado, Mensaje) VALUES (?, ?, ?)";
+
+                String respuesta = "ERROR";
+                try {
+                    Class.forName("com.mysql.cj.jdbc.Driver");
+                    try (Connection conn = DriverManager.getConnection(url, DB_USER, DB_PASS);
+                         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                        pstmt.setString(1, usuario);
+                        pstmt.setString(2, nombre);
+                        pstmt.setString(3, mensaje);
+                        pstmt.executeUpdate();
+                        respuesta = "OK";
+                    }
+                } catch (Exception e) {
+                    System.out.println("❌ Error al guardar mensaje: " + e.getMessage());
+                }
+
+                exchange.sendResponseHeaders(200, respuesta.length());
+                OutputStream os = exchange.getResponseBody();
+                os.write(respuesta.getBytes());
+                os.close();
+            }
+        }
+    }
+
+    // 🚀 NUEVO HANDLER: Lee los mensajes guardados de MySQL y los envía a la web
+    static class ObtenerMensajesHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            String url = "jdbc:mysql://" + DB_HOST + ":" + DB_PORT + "/" + DB_NAME + "?useSSL=false&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
+            String sql = "SELECT id, Usuario, NombreMostrado, Mensaje, TIME_FORMAT(FechaHora, '%H:%i') as Hora FROM MensajesChat ORDER BY id ASC";
+            
+            StringBuilder json = new StringBuilder();
+            json.append("[");
+
+            try {
+                Class.forName("com.mysql.cj.jdbc.Driver");
+                try (Connection conn = DriverManager.getConnection(url, DB_USER, DB_PASS);
+                     PreparedStatement pstmt = conn.prepareStatement(sql);
+                     ResultSet rs = pstmt.executeQuery()) {
+                    
+                    boolean primero = true;
+                    while (rs.next()) {
+                        if (!primero) json.append(",");
+                        primero = false;
+                        
+                        String msgLimpio = rs.getString("Mensaje").replace("\"", "\\\"");
+                        
+                        json.append("{");
+                        json.append("\"id\":").append(rs.getInt("id")).append(",");
+                        json.append("\"usuario\":\"").append(rs.getString("Usuario")).append("\",");
+                        json.append("\"autor\":\"").append(rs.getString("NombreMostrado")).append("\",");
+                        json.append("\"texto\":\"").append(msgLimpio).append("\",");
+                        json.append("\"hora\":\"").append(rs.getString("Hora")).append("\"");
+                        json.append("}");
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("❌ Error al leer mensajes: " + e.getMessage());
+            }
+            
+            json.append("]");
+            String respuesta = json.toString();
+
+            exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
+            exchange.sendResponseHeaders(200, respuesta.getBytes("UTF-8").length);
+            OutputStream os = exchange.getResponseBody();
+            os.write(respuesta.getBytes("UTF-8"));
+            os.close();
         }
     }
 }
