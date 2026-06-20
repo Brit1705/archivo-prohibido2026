@@ -320,7 +320,6 @@
         </div>
     </div>
 
-    <!-- SCRIPT LOGICO UNIFICADO COMPLETAMENTE CORREGIDO -->
     <script>
         let nombreUsuarioGlobal = "Participante";
         let rolUsuarioGlobal = "miembro";
@@ -350,7 +349,7 @@
             cargarFotosGaleria();
         });
 
-        // 📝 SISTEMA DE COMENTARIOS
+        // 📝 SISTEMA DE COMENTARIOS CONECTADO A CLEVER CLOUD
         function publicarComentario() {
             const campoTexto = document.getElementById("txt-nuevo-comentario");
             const texto = campoTexto.value.trim();
@@ -360,62 +359,74 @@
                 return;
             }
 
-            let comentarios = JSON.parse(localStorage.getItem("comentariosMuro")) || [];
-            comentarios.push({ 
-                id: Date.now(), 
-                autor: nombreUsuarioGlobal, 
-                texto: texto 
+            // Petición remota para registrar el anuncio en la base de datos
+            fetch('https://archivo-prohibido2026-production.up.railway.app/publicar-anuncio', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `usuario=${encodeURIComponent(nombreUsuarioGlobal)}&nombre=${encodeURIComponent(nombreUsuarioGlobal)}&anuncio=${encodeURIComponent(texto)}`
+            })
+            .then(response => response.text())
+            .then(data => {
+                if (data === "OK") {
+                    campoTexto.value = "";
+                    cargarComentariosMuro(); // Refrescar los anuncios para todos
+                } else {
+                    alert("Error al publicar en el servidor.");
+                }
+            })
+            .catch(error => {
+                console.error('Error al conectar:', error);
             });
-            localStorage.setItem("comentariosMuro", JSON.stringify(comentarios));
-
-            campoTexto.value = "";
-            cargarComentariosMuro();
         }
 
         function cargarComentariosMuro() {
             const contenedor = document.getElementById("muro-comentarios-contenedor");
             if (!contenedor) return;
 
-            let comentarios = JSON.parse(localStorage.getItem("comentariosMuro")) || [];
-            contenedor.innerHTML = "";
+            // Consultar los anuncios reales almacenados en MySQL
+            fetch('https://archivo-prohibido2026-production.up.railway.app/obtener-anuncios')
+            .then(response => response.json())
+            .then(comentarios => {
+                contenedor.innerHTML = "";
 
-            if (comentarios.length > 0) {
-                comentarios.forEach(c => {
-                    const fila = document.createElement("div");
-                    fila.style.borderBottom = "1px solid #eee";
-                    fila.style.padding = "10px 0";
-                    fila.style.display = "flex";
-                    fila.style.justifyContent = "space-between";
-                    fila.style.alignItems = "center";
+                if (comentarios.length > 0) {
+                    comentarios.forEach(c => {
+                        const fila = document.createElement("div");
+                        fila.style.borderBottom = "1px solid #eee";
+                        fila.style.padding = "10px 0";
+                        fila.style.display = "flex";
+                        fila.style.justifyContent = "space-between";
+                        fila.style.alignItems = "center";
 
-                    let contenidoHTML = `<div style="flex-grow: 1;"><strong>${c.autor}:</strong> <span>${c.texto}</span></div>`;
+                        let contenidoHTML = `<div style="flex-grow: 1;"><strong>${c.autor}:</strong> <span>${c.texto}</span></div>`;
 
-                    if (rolUsuarioGlobal === "admin") {
-                        contenidoHTML += `
-                            <button onclick="borrarComentarioMuro(${c.id})" style="background-color: #d32f2f; color: white; border: none; padding: 3px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-left: 10px;">
-                                ❌ Eliminar
-                            </button>`;
-                    }
+                        // Regla visual de borrado (se conectará el endpoint de borrado después)
+                        if (rolUsuarioGlobal === "admin") {
+                            contenidoHTML += `
+                                <button onclick="borrarComentarioMuro(${c.id})" style="background-color: #d32f2f; color: white; border: none; padding: 3px 8px; font-size: 11px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-left: 10px;">
+                                    ❌ Eliminar
+                                </button>`;
+                        }
 
-                    fila.innerHTML = contenidoHTML;
-                    contenedor.appendChild(fila);
-                });
-            } else {
-                contenedor.innerHTML = `<p style="color: #777; font-style: italic;">Actualmente vacío —</p>`;
-            }
+                        fila.innerHTML = contenidoHTML;
+                        contenedor.appendChild(fila);
+                    });
+                } else {
+                    contenedor.innerHTML = `<p style="color: #777; font-style: italic;">Actualmente vacío —</p>`;
+                }
+            })
+            .catch(error => {
+                console.error("Error al cargar el muro:", error);
+            });
         }
 
         function borrarComentarioMuro(idComentario) {
-            if (!confirm("¿Estás segura de eliminar este comentario del muro?")) return;
-
-            let comentarios = JSON.parse(localStorage.getItem("comentariosMuro")) || [];
-            comentarios = comentarios.filter(c => c.id !== idComentario);
-
-            localStorage.setItem("comentariosMuro", JSON.stringify(comentarios));
-            cargarComentariosMuro();
+            alert("El borrado de anuncios de la base de datos se implementará en conjunto con el resto de las secciones de borrado. ¡Pero la publicación ya es global!");
         }
 
-        // 📸 SISTEMA DE GALERÍA DE IMÁGENES
+        // 📸 SISTEMA DE GALERÍA DE IMÁGENES (Se mantiene local por ahora, lo pasaremos a base de datos luego)
         function subirFotoGaleria() {
             const input = document.getElementById("input-foto");
             if (!input.files || input.files.length === 0) {
