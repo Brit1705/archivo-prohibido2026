@@ -207,7 +207,7 @@ public class ServidorGrupo {
         }
 
         private String obtenerDatosUsuario(String usuario, String contrasena) {
-            String url = "jdbc:mysql://" + DB_HOST + ":" + DB_PORT + "/" + DB_NAME + "?useSSL=false&serverTimezone=UTC";
+            String url = "jdbc:mysql://" + DB_HOST + ":" + DB_PORT + "/" + DB_NAME + "?useSSL=false&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
             String sql = "SELECT NombreMostrado, Rol FROM Usuarios WHERE Usuario = ? AND Contrasena = ?";
             
             try {
