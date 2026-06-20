@@ -206,21 +206,38 @@ public class ServidorGrupo {
             }
         }
 
-        private String obtenerDatosUsuario(String usuario, String contrasena) {
+  private String obtenerDatosUsuario(String usuario, String contrasena) {
             String url = "jdbc:mysql://" + DB_HOST + ":" + DB_PORT + "/" + DB_NAME + "?useSSL=false&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
-            String sql = "SELECT NombreMostrado, Rol FROM Usuarios WHERE Usuario = ? AND Contrasena = ?";
+            
+            // 🚀 TRUCO DE COMPATIBILIDAD: Usamos TRIM() para eliminar espacios invisibles al principio o al final
+            String sql = "SELECT NombreMostrado, Rol FROM Usuarios WHERE TRIM(Usuario) = TRIM(?) AND TRIM(Contrasena) = TRIM(?)";
             
             try {
+                // Si las variables vienen vacías o nulas, evitamos hacer la consulta
+                if (usuario == null || contrasena == null) {
+                    System.out.println("⚠️ Datos recibidos son nulos");
+                    return null;
+                }
+
+                // Limpiamos espacios que se hayan colado en el envío de internet
+                String usuarioLimpio = usuario.trim();
+                String contrasenaLimpia = contrasena.trim();
+
+                System.out.println("🔎 Intentando validar usuario de internet: [" + usuarioLimpio + "]");
+
                 Class.forName("com.mysql.cj.jdbc.Driver");
                 try (Connection conn = DriverManager.getConnection(url, DB_USER, DB_PASS);
                      PreparedStatement pstmt = conn.prepareStatement(sql)) {
                     
-                    pstmt.setString(1, usuario);
-                    pstmt.setString(2, contrasena);
+                    pstmt.setString(1, usuarioLimpio);
+                    pstmt.setString(2, contrasenaLimpia);
                     
                     try (ResultSet rs = pstmt.executeQuery()) {
                         if (rs.next()) {
+                            System.out.println("✅ ¡Usuario encontrado con éxito en MySQL!");
                             return rs.getString("NombreMostrado") + "," + rs.getString("Rol");
+                        } else {
+                            System.out.println("❌ Credenciales no coincidieron con ninguna fila en MySQL");
                         }
                     }
                 }
@@ -229,6 +246,7 @@ public class ServidorGrupo {
                 e.printStackTrace();
             }
             return null;
+        
         }
     }
 }
