@@ -366,4 +366,60 @@ public class ServidorGrupo {
             os.close();
         }
     }
+        // 🚀 NUEVO HANDLER: Elimina un mensaje por su ID de la base de datos
+    static class BorrarMensajeHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                java.io.InputStream is = exchange.getRequestBody();
+                java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+                byte[] buffer = new byte[1024];
+                int len;
+                while ((len = is.read(buffer)) != -1) {
+                    bos.write(buffer, 0, len);
+                }
+                String query = bos.toString("UTF-8");
+
+                Map<String, String> params = new HashMap<>();
+                for (String param : query.split("&")) {
+                    String[] pair = param.split("=");
+                    if (pair.length > 1) {
+                        params.put(java.net.URLDecoder.decode(pair[0], "UTF-8"), java.net.URLDecoder.decode(pair[1], "UTF-8"));
+                    }
+                }
+
+                String idMsg = params.get("id");
+
+                String url = "jdbc:mysql://" + DB_HOST + ":" + DB_PORT + "/" + DB_NAME + "?useSSL=false&allowPublicKeyRetrieval=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
+                String sql = "DELETE FROM MensajesChat WHERE id = ?";
+
+                String respuesta = "ERROR";
+                try {
+                    Class.forName("com.mysql.cj.jdbc.Driver");
+                    try (Connection conn = DriverManager.getConnection(url, DB_USER, DB_PASS);
+                         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                        pstmt.setInt(1, Integer.parseInt(idMsg));
+                        pstmt.executeUpdate();
+                        respuesta = "OK";
+                    }
+                } catch (Exception e) {
+                    System.out.println("❌ Error al borrar mensaje: " + e.getMessage());
+                }
+
+                exchange.sendResponseHeaders(200, respuesta.length());
+                OutputStream os = exchange.getResponseBody();
+                os.write(respuesta.getBytes());
+                os.close();
+            }
+        }
+    }
 }
