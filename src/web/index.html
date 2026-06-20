@@ -103,8 +103,7 @@
         <p id="mensaje-error">Usuario o contraseña incorrectos.</p>
     </div>
 
-    <script>
-      
+   <script>
 document.getElementById('loginForm').addEventListener('submit', function(event) {
     event.preventDefault();
 
@@ -112,10 +111,11 @@ document.getElementById('loginForm').addEventListener('submit', function(event) 
     const contrasena = document.getElementById('contrasena').value;
     const errorTxt = document.getElementById('mensaje-error');
 
-     fetch('https://archivo-prohibido2026-production.up.railway.app/', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+    // 🚀 URL Corregida a la perfección con tu dominio exacto
+    fetch('https://archivo-prohibido2026-production.up.railway.app/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: `usuario=${encodeURIComponent(usuario)}&contrasena=${encodeURIComponent(contrasena)}`
     })
@@ -135,7 +135,6 @@ document.getElementById('loginForm').addEventListener('submit', function(event) 
             // Redirecciona a la página del menú
             window.location.href = "/principal";
         } else {
-            // Si la etiqueta de error existe la muestra, si no, tira un alert
             if (errorTxt) {
                 errorTxt.style.display = "block";
             } else {
